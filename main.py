@@ -21,7 +21,7 @@ class ChatResponse(BaseModel):
 
 # Langflow API configuration
 LANGFLOW_API_URL = "https://api.langflow.astra.datastax.com/lf/ed6c45f6-6029-47a5-a6ee-86d7caf24d60/api/v1/run/da053891-67b1-449f-9f2e-6081bb8c6cc6"
-LANGFLOW_TOKEN = os.getenv("LANGFLOW_TOKEN")
+APPLICATION_TOKEN = os.getenv("APPLICATION_TOKEN")
 
 @app.get("/health")
 async def health_check():
@@ -33,15 +33,15 @@ async def process_chat(input: ChatInput):
     """
     Process chat input through Langflow API
     """
-    if not LANGFLOW_TOKEN:
+    if not APPLICATION_TOKEN:
         raise HTTPException(
             status_code=500,
-            detail="LANGFLOW_TOKEN environment variable is not set"
+            detail="APPLICATION_TOKEN environment variable is not set"
         )
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {LANGFLOW_TOKEN}"
+        "Authorization": f"Bearer {APPLICATION_TOKEN}"
     }
 
     payload = {
