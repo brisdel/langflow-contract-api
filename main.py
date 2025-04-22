@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware  # Added this import
 from pydantic import BaseModel
 import requests
 import os
@@ -109,4 +110,4 @@ async def process_chat(input: ChatInput):
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False) 
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
