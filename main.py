@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware  # Added this import
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
 import os
 import json
 from dotenv import load_dotenv
+import uvicorn
 
 # Load environment variables
 load_dotenv()
@@ -39,7 +40,11 @@ APPLICATION_TOKEN = os.getenv("APPLICATION_TOKEN")
 @app.get("/health")
 async def health_check():
     """Health check endpoint for Railway"""
-    return {"status": "healthy"}
+    try:
+        # You might want to add more sophisticated health checks here
+        return {"status": "healthy", "message": "Service is running"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/chat", response_model=ChatResponse)
 async def process_chat(input: ChatInput):
@@ -69,6 +74,13 @@ async def process_chat(input: ChatInput):
             json=payload,
             headers=headers
         )
+        
+        if response.status_code == 403:
+            raise HTTPException(
+                status_code=403,
+                detail="Authentication failed with Langflow API. Please check if the APPLICATION_TOKEN is valid."
+            )
+            
         response.raise_for_status()
         
         # Parse the response JSON
@@ -106,8 +118,6 @@ async def process_chat(input: ChatInput):
             detail=f"Unexpected error: {str(e)}"
         )
 
-# Add this at the end of the file
 if __name__ == "__main__":
-    import uvicorn
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run(app, host="0.0.0.0", port=port) 
