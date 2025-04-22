@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
 import os
+import json
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -18,6 +19,8 @@ class ChatInput(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+    session_id: str | None = None
+    timestamp: str | None = None
 
 # Langflow API configuration
 LANGFLOW_API_URL = "https://api.langflow.astra.datastax.com/lf/ed6c45f6-6029-47a5-a6ee-86d7caf24d60/api/v1/run/da053891-67b1-449f-9f2e-6081bb8c6cc6"
@@ -58,12 +61,34 @@ async def process_chat(input: ChatInput):
         )
         response.raise_for_status()
         
-        return ChatResponse(response=response.text)
+        # Parse the response JSON
+        langflow_response = json.loads(response.text)
+        
+        # Extract the actual message from the nested structure
+        if isinstance(langflow_response, dict):
+            try:
+                # Parse the outputs section
+                outputs = langflow_response.get('outputs', [])[0].get('outputs', [])[0]
+                results = outputs.get('results', {}).get('message', {})
+                
+                return ChatResponse(
+                    response=results.get('text', ''),
+                    session_id=results.get('session_id'),
+                    timestamp=results.get('timestamp')
+                )
+            except (KeyError, IndexError):
+                # If we can't parse the structure, return the raw text
+                return ChatResponse(response=response.text)
 
     except requests.exceptions.RequestException as e:
         raise HTTPException(
             status_code=500,
             detail=f"Error communicating with Langflow API: {str(e)}"
+        )
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error parsing Langflow API response: {str(e)}"
         )
     except Exception as e:
         raise HTTPException(
