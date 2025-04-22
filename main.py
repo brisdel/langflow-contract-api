@@ -69,4 +69,10 @@ async def process_chat(input: ChatInput):
         raise HTTPException(
             status_code=500,
             detail=f"Unexpected error: {str(e)}"
-        ) 
+        )
+
+# Add this at the end of the file
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False) 
